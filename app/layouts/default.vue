@@ -6,10 +6,10 @@ const isMobileMenuOpen = ref(false)
 
 const navItems = [
   { name: 'Gösterge Paneli', path: '/', icon: '📊' },
-  { name: 'Seferler', path: '/trips', icon: '🛣️' },
+  { name: 'Kafileler', path: '/convoys', icon: '👥' },
   { name: 'Araç Sahipleri', path: '/owners', icon: '👤' },
   { name: 'Otobüsler', path: '/buses', icon: '🚌' },
-  { name: 'Kafileler', path: '/convoys', icon: '👥' },
+  { name: 'Seferler', path: '/trips', icon: '🛣️' },
 ]
 
 const handleLogout = async () => {
