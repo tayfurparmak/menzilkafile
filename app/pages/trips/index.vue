@@ -132,6 +132,150 @@ const goToPage = (p: number) => {
   fetchTrips()
 }
 
+// WhatsApp Rapor Modalı ve Paylaşım
+const isWhatsAppModalOpen = ref(false)
+const whatsAppReportMode = ref<'all' | 'single'>('all')
+const selectedTripForWhatsApp = ref<any>(null)
+const whatsAppTargetPhone = ref('')
+const isCopied = ref(false)
+
+const formatPhoneForWhatsApp = (rawPhone: string): string => {
+  if (!rawPhone) return ''
+  let digits = rawPhone.replace(/\D/g, '')
+  if (!digits) return ''
+  if (digits.startsWith('90') && digits.length === 12) return digits
+  if (digits.startsWith('0') && digits.length === 11) return '9' + digits
+  if (digits.length === 10) return '90' + digits
+  return digits
+}
+
+const statusLabels: Record<string, string> = {
+  PLANNED: 'Planlandı',
+  ON_ROAD: 'Yolda',
+  COMPLETED: 'Tamamlandı',
+  CANCELLED: 'İptal',
+}
+
+const buildSingleTripText = (trip: any, index?: number) => {
+  const numPrefix = index !== undefined ? `${index}. ` : ''
+  const statusStr = statusLabels[trip.status] || trip.status
+  const payStatusStr = trip.paymentStatus?.label || (trip.paymentStatus?.code === 'PAID' ? 'Tamamı Ödendi' : trip.paymentStatus?.code === 'PARTIAL' ? 'Kısmi Ödendi' : 'Ödenmedi')
+
+  let out = `🚌 *${numPrefix}${trip.plate}* (${trip.capacity} Kişilik)\n`
+  out += `📍 *Güzergâh:* ${trip.departureLocation} ➔ ${trip.arrivalLocation}\n`
+  out += `🗓 *Kalkış:* ${formatDateTime(trip.startsAt)}\n`
+  out += `🏁 *Varış:* ${formatDateTime(trip.endsAt)}\n`
+  if (trip.convoyName) {
+    out += `🏷 *Kafile:* ${trip.convoyName}\n`
+  }
+  out += `👤 *Araç Sahibi:* ${trip.ownerName || '-'}\n`
+  out += `👨‍✈️ *Şoför:* ${trip.driverName || 'Belirtilmedi'} ${trip.driverPhone ? `(📞 ${trip.driverPhone})` : ''}\n`
+  out += `💰 *Ücret:* ${formatMoney(trip.agreedAmount)} | *Ödenen:* ${formatMoney(trip.totalPaid)} | *Kalan:* ${formatMoney(trip.remainingAmount)}\n`
+  out += `🚦 *Durum:* ${statusStr} • ${payStatusStr}`
+  if (trip.notes) {
+    out += `\n📝 *Not:* ${trip.notes}`
+  }
+  return out
+}
+
+const generateWhatsAppText = () => {
+  if (whatsAppReportMode.value === 'single' && selectedTripForWhatsApp.value) {
+    return `📋 *SEFER BİLGİ DETAYI*
+━━━━━━━━━━━━━━━━━━━━
+${buildSingleTripText(selectedTripForWhatsApp.value)}
+━━━━━━━━━━━━━━━━━━━━
+🕌 *Menzil Kafile Takip Sistemi*`
+  }
+
+  const count = trips.value.length
+  if (count === 0) {
+    return 'Gönderilecek sefer bulunamadı.'
+  }
+
+  const todayStr = new Intl.DateTimeFormat('tr-TR', {
+    timeZone: 'Europe/Istanbul',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date())
+
+  let text = `📋 *MENZİL KAFİLE - SEFER RAPORU*\n📅 *Rapor Tarihi:* ${todayStr}\n🔢 *Toplam Sefer Sayısı:* ${count}\n\n`
+
+  let totalAgreed = 0
+  let totalPaid = 0
+  let totalRemaining = 0
+
+  trips.value.forEach((t, i) => {
+    totalAgreed += parseFloat(t.agreedAmount) || 0
+    totalPaid += parseFloat(t.totalPaid) || 0
+    totalRemaining += parseFloat(t.remainingAmount) || 0
+
+    text += `━━━━━━━━━━━━━━━━━━━━\n`
+    text += buildSingleTripText(t, i + 1) + '\n'
+  })
+
+  text += `━━━━━━━━━━━━━━━━━━━━\n`
+  text += `📈 *GENEL TOPLAM*\n`
+  text += `💵 *Toplam Anlaşılan:* ${formatMoney(totalAgreed)}\n`
+  text += `💳 *Toplam Tahsil Edilen:* ${formatMoney(totalPaid)}\n`
+  text += `⏳ *Toplam Kalan:* ${formatMoney(totalRemaining)}\n`
+  text += `━━━━━━━━━━━━━━━━━━━━\n`
+  text += `🕌 *Menzil Kafile Takip Sistemi*`
+
+  return text
+}
+
+const openWhatsAppModal = (trip?: any) => {
+  if (trip) {
+    selectedTripForWhatsApp.value = trip
+    whatsAppReportMode.value = 'single'
+    whatsAppTargetPhone.value = trip.driverPhone || ''
+  } else {
+    selectedTripForWhatsApp.value = trips.value[0] || null
+    whatsAppReportMode.value = 'all'
+    whatsAppTargetPhone.value = ''
+  }
+  isCopied.value = false
+  isWhatsAppModalOpen.value = true
+}
+
+const copyReportToClipboard = async () => {
+  const text = generateWhatsAppText()
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+    isCopied.value = true
+    setTimeout(() => { isCopied.value = false }, 2500)
+  } catch (err) {
+    console.error('Kopyalama hatası:', err)
+  }
+}
+
+const sendToWhatsApp = () => {
+  const text = generateWhatsAppText()
+  const encodedText = encodeURIComponent(text)
+  const phone = formatPhoneForWhatsApp(whatsAppTargetPhone.value)
+
+  let url = ''
+  if (phone) {
+    url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`
+  } else {
+    url = `https://api.whatsapp.com/send?text=${encodedText}`
+  }
+
+  window.open(url, '_blank')
+}
+
 const isExportingCsv = ref(false)
 
 const exportCsv = async () => {
@@ -301,13 +445,13 @@ onMounted(() => {
       <div class="flex items-center space-x-3">
         <button
           type="button"
-          class="btn-secondary flex items-center space-x-1.5"
-          :disabled="isExportingCsv"
-          @click="exportCsv"
+          class="bg-[#25D366] hover:bg-[#20bd5a] text-white px-3.5 py-2 rounded-lg font-semibold text-sm flex items-center space-x-2 shadow-sm transition-all hover:shadow active:scale-95"
+          @click="openWhatsAppModal()"
         >
-          <span v-if="isExportingCsv" class="inline-block animate-spin">⏳</span>
-          <span v-else>📥</span>
-          <span>{{ isExportingCsv ? 'İndiriliyor...' : 'CSV İndir' }}</span>
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          </svg>
+          <span>WhatsApp Raporu</span>
         </button>
         <NuxtLink to="/trips/new" class="btn-primary">
           <span class="mr-1.5 font-bold">+</span> Yeni Sefer Oluştur
@@ -524,6 +668,14 @@ onMounted(() => {
                 <PaymentStatusBadge :status="trip.paymentStatus" />
               </td>
               <td class="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
+                <button
+                  type="button"
+                  class="text-xs font-semibold text-[#25D366] hover:text-[#20bd5a]"
+                  title="WhatsApp ile Paylaş"
+                  @click="openWhatsAppModal(trip)"
+                >
+                  WhatsApp
+                </button>
                 <NuxtLink :to="`/trips/${trip.id}`" class="text-xs font-semibold text-emerald-700 hover:underline">
                   Detay
                 </NuxtLink>
@@ -593,6 +745,13 @@ onMounted(() => {
           <div class="flex items-center justify-between pt-1 text-xs">
             <span class="text-slate-400">Sahip: {{ trip.ownerName }}</span>
             <div class="space-x-3">
+              <button
+                type="button"
+                class="font-semibold text-[#25D366] hover:text-[#20bd5a]"
+                @click="openWhatsAppModal(trip)"
+              >
+                WhatsApp
+              </button>
               <button
                 v-if="trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED'"
                 type="button"
@@ -716,5 +875,129 @@ onMounted(() => {
       @confirm="executeDeleteTrip"
       @cancel="isDeleteTripOpen = false"
     />
+
+    <!-- WhatsApp Rapor Modalı -->
+    <div
+      v-if="isWhatsAppModalOpen"
+      class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      @click.self="isWhatsAppModalOpen = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-100">
+        <!-- Başlık -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-[#25D366] flex items-center justify-center border border-emerald-100 shadow-sm">
+              <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">WhatsApp Sefer Raporu</h3>
+              <p class="text-xs text-slate-500">Sefer bilgilerini WhatsApp üzerinden paylaşın</p>
+            </div>
+          </div>
+          <button type="button" class="text-slate-400 hover:text-slate-600 p-1" @click="isWhatsAppModalOpen = false">
+            ✕
+          </button>
+        </div>
+
+        <!-- Rapor Türü Seçimi -->
+        <div class="flex rounded-lg bg-slate-100 p-1 text-xs font-semibold">
+          <button
+            type="button"
+            class="flex-1 py-1.5 rounded-md transition-all text-center"
+            :class="whatsAppReportMode === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            @click="whatsAppReportMode = 'all'"
+          >
+            📋 Tablodaki Tüm Seferler ({{ trips.length }})
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-1.5 rounded-md transition-all text-center"
+            :class="whatsAppReportMode === 'single' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            @click="whatsAppReportMode = 'single'"
+          >
+            🚌 Tek Sefer Raporu
+          </button>
+        </div>
+
+        <!-- Tek Sefer Seçim Alanı -->
+        <div v-if="whatsAppReportMode === 'single'">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Paylaşılacak Sefer</label>
+          <select v-model="selectedTripForWhatsApp" class="input-field text-xs">
+            <option v-for="t in trips" :key="t.id" :value="t">
+              {{ t.plate }} ({{ t.departureLocation }} ➔ {{ t.arrivalLocation }}) - Şoför: {{ t.driverName || 'Belirtilmedi' }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Telefon Numarası Girişi -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold text-slate-700">Gönderilecek Telefon (Opsiyonel)</label>
+            <span class="text-[11px] text-slate-400">Boş bırakılırsa rehberden seçilir</span>
+          </div>
+          <input
+            v-model="whatsAppTargetPhone"
+            type="tel"
+            class="input-field text-xs"
+            placeholder="Ör. 0532 503 61 66"
+          />
+          <!-- Hızlı Numara Butonları -->
+          <div v-if="whatsAppReportMode === 'single' && selectedTripForWhatsApp?.driverPhone" class="flex flex-wrap gap-1.5 mt-1.5">
+            <button
+              type="button"
+              class="text-[11px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 transition-colors flex items-center space-x-1"
+              @click="whatsAppTargetPhone = selectedTripForWhatsApp.driverPhone"
+            >
+              <span>👨‍✈️ Şoför Numarasını Ekle:</span>
+              <strong class="font-bold">{{ selectedTripForWhatsApp.driverPhone }}</strong>
+            </button>
+          </div>
+        </div>
+
+        <!-- Rapor Önizlemesi -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold text-slate-700">Mesaj Önizlemesi</label>
+            <span class="text-[11px] text-emerald-600 font-medium">WhatsApp Biçimi</span>
+          </div>
+          <div class="bg-[#E7FCE8]/70 border border-[#25D366]/30 rounded-xl p-3 text-xs text-slate-800 font-mono whitespace-pre-wrap max-h-52 overflow-y-auto leading-relaxed shadow-inner select-text">
+            {{ generateWhatsAppText() }}
+          </div>
+        </div>
+
+        <!-- Alt Butonlar -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            class="btn-secondary text-xs flex items-center space-x-1.5"
+            @click="copyReportToClipboard"
+          >
+            <span>{{ isCopied ? '✓' : '📋' }}</span>
+            <span>{{ isCopied ? 'Kopyalandı!' : 'Metni Kopyala' }}</span>
+          </button>
+          <div class="flex items-center space-x-2">
+            <button
+              type="button"
+              class="btn-secondary text-xs"
+              @click="isWhatsAppModalOpen = false"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              class="bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 shadow-sm transition-all hover:shadow active:scale-95"
+              @click="sendToWhatsApp"
+            >
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+              </svg>
+              <span>WhatsApp'ta Aç</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
