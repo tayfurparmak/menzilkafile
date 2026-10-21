@@ -1,0 +1,40 @@
+{
+  "name": "menziltakip",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "prisma generate && nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "lint": "nuxt typecheck",
+    "test": "vitest run",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@lucide/vue": "^1.60.0",
+    "@prisma/client": "^6.4.0",
+    "@supabase/supabase-js": "^2.49.1",
+    "decimal.js": "^10.6.0",
+    "lucide-vue-next": "^1.0.0",
+    "nuxt": "^4.6.2",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "prisma": "^6.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.8.2",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.3.13"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
