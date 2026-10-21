@@ -48,6 +48,7 @@ model VehicleOwner {
 model Bus {
   id        String   @id @default(cuid())
   plate     String   @unique
+  model     String?
   capacity  Int
   ownerId   String
   driverName String?

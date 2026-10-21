@@ -26,6 +26,7 @@ const isModalOpen = ref(false)
 const isEditing = ref(false)
 const targetBusId = ref<string | null>(null)
 const formPlate = ref('')
+const formModel = ref('')
 const formCapacity = ref<number>(46)
 const formOwnerId = ref('')
 const formNotes = ref('')
@@ -118,6 +119,7 @@ const openCreateModal = async () => {
   isEditing.value = false
   targetBusId.value = null
   formPlate.value = ''
+  formModel.value = ''
   formCapacity.value = 46
   formOwnerId.value = selectedOwnerId.value || (owners.value[0]?.id || '')
   formNotes.value = ''
@@ -131,6 +133,7 @@ const openEditModal = async (bus: any) => {
   isEditing.value = true
   targetBusId.value = bus.id
   formPlate.value = bus.plate
+  formModel.value = bus.model || ''
   formCapacity.value = bus.capacity
   formOwnerId.value = bus.ownerId
   formNotes.value = bus.notes || ''
@@ -158,6 +161,7 @@ const saveBus = async () => {
         method: 'PUT',
         body: {
           plate: formPlate.value.trim(),
+          model: formModel.value.trim() || null,
           capacity: Number(formCapacity.value),
           ownerId: formOwnerId.value,
           notes: formNotes.value.trim() || null,
@@ -170,6 +174,7 @@ const saveBus = async () => {
         method: 'POST',
         body: {
           plate: formPlate.value.trim(),
+          model: formModel.value.trim() || null,
           capacity: Number(formCapacity.value),
           ownerId: formOwnerId.value,
           notes: formNotes.value.trim() || null,
@@ -339,6 +344,7 @@ onMounted(() => {
           <thead class="bg-slate-50 text-xs font-semibold text-slate-500 uppercase border-b border-slate-200">
             <tr>
               <th class="py-3.5 px-4">Plaka</th>
+              <th class="py-3.5 px-4">Araç Modeli</th>
               <th class="py-3.5 px-4">Koltuk Kapasitesi</th>
               <th class="py-3.5 px-4">Araç Sahibi</th>
               <th class="py-3.5 px-4">Toplam Sefer</th>
@@ -352,6 +358,9 @@ onMounted(() => {
                 <NuxtLink :to="`/buses/${bus.id}`" class="font-bold text-slate-900 hover:text-emerald-700 hover:underline">
                   {{ bus.plate }}
                 </NuxtLink>
+              </td>
+              <td class="py-3.5 px-4 font-medium text-slate-800">
+                {{ bus.model || '-' }}
               </td>
               <td class="py-3.5 px-4 font-semibold text-slate-800">
                 {{ bus.capacity }} Kişilik
@@ -419,7 +428,10 @@ onMounted(() => {
               <NuxtLink :to="`/buses/${bus.id}`" class="font-bold text-slate-900 text-base hover:underline">
                 {{ bus.plate }}
               </NuxtLink>
-              <p class="text-xs text-slate-500">{{ bus.capacity }} Kişilik | Sahip: {{ bus.ownerName }}</p>
+              <p class="text-xs text-slate-500">
+                <span v-if="bus.model" class="font-semibold text-slate-700">{{ bus.model }} • </span>
+                {{ bus.capacity }} Kişilik | Sahip: {{ bus.ownerName }}
+              </p>
             </div>
             <span
               class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold"
@@ -496,6 +508,16 @@ onMounted(() => {
           </div>
 
           <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Araç Modeli</label>
+            <input
+              v-model="formModel"
+              type="text"
+              class="input-field"
+              placeholder="Ör. 2015 Safir, Tourismo, Travego..."
+            />
+          </div>
+
+          <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Koltuk Kapasitesi *</label>
             <select v-model="formCapacity" class="input-field">
               <option :value="41">41 Kişilik</option>
@@ -521,7 +543,7 @@ onMounted(() => {
               v-model="formNotes"
               rows="2"
               class="input-field"
-              placeholder="Model yılı, marka veya özel operasyon notları..."
+              placeholder="Özel operasyon notları veya açıklamalar..."
             ></textarea>
           </div>
 

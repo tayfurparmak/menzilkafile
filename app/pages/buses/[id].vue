@@ -68,6 +68,7 @@ onMounted(() => {
             </span>
           </div>
           <p class="text-sm text-slate-600">
+            <span v-if="bus.model" class="mr-2">Model: <strong class="text-slate-900 font-bold">{{ bus.model }}</strong> |</span>
             Kapasite: <span class="font-bold text-slate-900">{{ bus.capacity }} Kişilik</span> |
             Araç Sahibi:
             <NuxtLink :to="`/owners/${bus.owner.id}`" class="font-semibold text-emerald-700 hover:underline">

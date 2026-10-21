@@ -5,6 +5,7 @@ import { normalizePlate, isValidCapacity } from '../../utils/business'
 
 const updateBusSchema = z.object({
   plate: z.string().trim().min(3).optional(),
+  model: z.string().trim().optional().nullable(),
   capacity: z.coerce.number().refine(isValidCapacity, {
     message: 'Kapasite yalnızca 41, 46 veya 54 olabilir.',
   }).optional(),
@@ -65,6 +66,7 @@ export default defineEventHandler(async (event) => {
     where: { id },
     data: {
       plate: normalizedPlate,
+      ...(body.model !== undefined ? { model: body.model } : {}),
       ...(body.capacity !== undefined ? { capacity: body.capacity } : {}),
       ...(body.ownerId !== undefined ? { ownerId: body.ownerId } : {}),
       ...(body.driverName !== undefined ? { driverName: body.driverName } : {}),

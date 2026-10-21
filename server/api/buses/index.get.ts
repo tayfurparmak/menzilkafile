@@ -52,6 +52,7 @@ export default defineEventHandler(async (event) => {
     items: buses.map((b) => ({
       id: b.id,
       plate: b.plate,
+      model: b.model,
       capacity: b.capacity,
       ownerId: b.ownerId,
       ownerName: b.owner.name,

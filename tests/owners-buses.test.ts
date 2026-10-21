@@ -11,6 +11,7 @@ const createOwnerSchema = z.object({
 
 const createBusSchema = z.object({
   plate: z.string().trim().min(3, 'Plaka en az 3 karakter olmalıdır.'),
+  model: z.string().trim().optional().nullable(),
   capacity: z.coerce.number().refine(isValidCapacity, {
     message: 'Kapasite yalnızca 41, 46 veya 54 olabilir.',
   }),
@@ -56,8 +57,12 @@ describe('Araç Sahibi ve Otobüs Yönetimi Kuralları (STATE 04)', () => {
   })
 
   describe('Otobüs Kapasitesi Kısıtı', () => {
-    it('Sadece 41, 46 ve 54 kapasitelerini geçerli kabul eder', () => {
-      expect(createBusSchema.safeParse({ plate: '35 ABC 01', capacity: 41, ownerId: 'own-1' }).success).toBe(true)
+    it('Sadece 41, 46 ve 54 kapasitelerini geçerli kabul eder ve model bilgisini doğrular', () => {
+      const busWithModel = createBusSchema.safeParse({ plate: '35 ABC 01', model: '2015 SAFİR', capacity: 41, ownerId: 'own-1' })
+      expect(busWithModel.success).toBe(true)
+      if (busWithModel.success) {
+        expect(busWithModel.data.model).toBe('2015 SAFİR')
+      }
       expect(createBusSchema.safeParse({ plate: '35 ABC 02', capacity: 46, ownerId: 'own-1' }).success).toBe(true)
       expect(createBusSchema.safeParse({ plate: '35 ABC 03', capacity: 54, ownerId: 'own-1' }).success).toBe(true)
     })
