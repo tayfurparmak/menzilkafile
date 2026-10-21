@@ -16,6 +16,8 @@ const endDate = ref((route.query.endDate as string) || '')
 const plate = ref((route.query.plate as string) || '')
 const selectedOwnerId = ref((route.query.ownerId as string) || '')
 const selectedConvoyId = ref((route.query.convoyId as string) || '')
+const driverName = ref((route.query.driverName as string) || '')
+const driverPhone = ref((route.query.driverPhone as string) || '')
 const statusFilter = ref((route.query.status as string) || 'ALL')
 const paymentStatusFilter = ref<string>((route.query.paymentStatus as string) || 'ALL')
 const sortBy = ref<'startsAt' | 'endsAt' | 'agreedAmount' | 'createdAt'>((route.query.sortBy as any) || 'startsAt')
@@ -67,6 +69,8 @@ const syncUrl = () => {
   if (startDate.value) query.startDate = startDate.value
   if (endDate.value) query.endDate = endDate.value
   if (plate.value.trim()) query.plate = plate.value.trim()
+  if (driverName.value.trim()) query.driverName = driverName.value.trim()
+  if (driverPhone.value.trim()) query.driverPhone = driverPhone.value.trim()
   if (selectedOwnerId.value) query.ownerId = selectedOwnerId.value
   if (selectedConvoyId.value) query.convoyId = selectedConvoyId.value
   if (statusFilter.value !== 'ALL') query.status = statusFilter.value
@@ -99,6 +103,8 @@ const fetchTrips = async () => {
     if (startDate.value) params.append('startDate', startDate.value)
     if (endDate.value) params.append('endDate', endDate.value)
     if (plate.value.trim()) params.append('plate', plate.value.trim())
+    if (driverName.value.trim()) params.append('driverName', driverName.value.trim())
+    if (driverPhone.value.trim()) params.append('driverPhone', driverPhone.value.trim())
     if (selectedOwnerId.value) params.append('ownerId', selectedOwnerId.value)
     if (selectedConvoyId.value) params.append('convoyId', selectedConvoyId.value)
     if (statusFilter.value !== 'ALL') params.append('status', statusFilter.value)
@@ -136,6 +142,8 @@ const exportCsv = async () => {
     if (startDate.value) params.append('startDate', startDate.value)
     if (endDate.value) params.append('endDate', endDate.value)
     if (plate.value.trim()) params.append('plate', plate.value.trim())
+    if (driverName.value.trim()) params.append('driverName', driverName.value.trim())
+    if (driverPhone.value.trim()) params.append('driverPhone', driverPhone.value.trim())
     if (selectedOwnerId.value) params.append('ownerId', selectedOwnerId.value)
     if (selectedConvoyId.value) params.append('convoyId', selectedConvoyId.value)
     if (statusFilter.value !== 'ALL') params.append('status', statusFilter.value)
@@ -174,7 +182,7 @@ const exportCsv = async () => {
 }
 
 let searchTimer: any = null
-watch(plate, () => {
+watch([plate, driverName, driverPhone], () => {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {
     currentPage.value = 1
@@ -184,7 +192,7 @@ watch(plate, () => {
 })
 
 watch(
-  [startDate, endDate, selectedOwnerId, selectedConvoyId, statusFilter, paymentStatusFilter, sortBy, sortOrder],
+  [startDate, endDate, selectedOwnerId, selectedConvoyId, paymentStatusFilter, sortBy, sortOrder],
   () => {
     currentPage.value = 1
     syncUrl()
@@ -196,6 +204,8 @@ const resetFilters = () => {
   startDate.value = ''
   endDate.value = ''
   plate.value = ''
+  driverName.value = ''
+  driverPhone.value = ''
   selectedOwnerId.value = ''
   selectedConvoyId.value = ''
   statusFilter.value = 'ALL'
@@ -346,16 +356,26 @@ onMounted(() => {
           </select>
         </div>
 
-        <!-- Sefer Durumu -->
+        <!-- Otobüs Şoförü -->
         <div>
-          <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Sefer Durumu</label>
-          <select v-model="statusFilter" class="input-field text-xs py-1.5">
-            <option value="ALL">Tüm Durumlar</option>
-            <option value="PLANNED">Planlandı</option>
-            <option value="ON_ROAD">Yolda</option>
-            <option value="COMPLETED">Tamamlandı</option>
-            <option value="CANCELLED">İptal</option>
-          </select>
+          <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Otobüs Şoförü</label>
+          <input
+            v-model="driverName"
+            type="text"
+            placeholder="Şoför adına göre ara..."
+            class="input-field text-xs py-1.5"
+          />
+        </div>
+
+        <!-- Telefon Numarası -->
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Telefon Numarası</label>
+          <input
+            v-model="driverPhone"
+            type="text"
+            placeholder="Telefona göre ara..."
+            class="input-field text-xs py-1.5"
+          />
         </div>
 
         <!-- Ödeme Durumu -->

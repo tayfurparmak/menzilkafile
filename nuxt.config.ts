@@ -21,3 +21,4 @@ export default defineNuxtConfig({
     }
   }
 })
+// Dev server reload

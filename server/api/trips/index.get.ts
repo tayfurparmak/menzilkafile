@@ -10,6 +10,8 @@ const querySchema = z.object({
   plate: z.string().optional(),
   ownerId: z.string().optional(),
   convoyId: z.string().optional(),
+  driverName: z.string().optional(),
+  driverPhone: z.string().optional(),
   status: z.nativeEnum(TripStatus).or(z.literal('ALL')).default('ALL'),
   paymentStatus: z.enum(['ALL', 'UNPAID', 'PARTIALLY_PAID', 'PAID', 'NO_PAYMENT_REQUIRED']).default('ALL'),
   sortBy: z.enum(['startsAt', 'endsAt', 'agreedAmount', 'createdAt']).default('startsAt'),
@@ -29,6 +31,8 @@ export default defineEventHandler(async (event) => {
     plate,
     ownerId,
     convoyId,
+    driverName,
+    driverPhone,
     status,
     paymentStatus,
     sortBy,
@@ -54,6 +58,14 @@ export default defineEventHandler(async (event) => {
 
   if (plate && plate.trim() !== '') {
     where.plateSnapshot = { contains: plate.trim().toLocaleUpperCase('tr-TR'), mode: 'insensitive' }
+  }
+
+  if (driverName && driverName.trim() !== '') {
+    where.driverName = { contains: driverName.trim(), mode: 'insensitive' }
+  }
+
+  if (driverPhone && driverPhone.trim() !== '') {
+    where.driverPhone = { contains: driverPhone.trim(), mode: 'insensitive' }
   }
 
   if (startDate || endDate) {
