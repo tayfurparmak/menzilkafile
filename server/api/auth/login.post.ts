@@ -3,29 +3,41 @@ import { prisma } from '../../utils/prisma'
 import { createInternalToken } from '../../utils/auth'
 
 const loginSchema = z.object({
-  email: z.string().email('Geçerli bir e-posta adresi girin.'),
-  password: z.string().min(1, 'Parola zorunludur.'),
+  username: z.string().optional(),
+  email: z.string().optional(),
+  password: z.string().min(1, 'Şifre zorunludur.'),
+}).refine((data) => !!(data.username || data.email), {
+  message: 'Kullanıcı adı zorunludur.',
+  path: ['username'],
 })
 
 export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Cache-Control', 'private, no-cache, no-store, must-revalidate')
   setResponseHeader(event, 'Pragma', 'no-cache')
   const body = await readValidatedBody(event, (data) => loginSchema.parse(data))
-  const { email, password } = body
+  const { password } = body
+  const identifier = ((body.username || body.email || '') as string).trim().toLowerCase()
 
-  // 1. Supabase auth.users tablosunda parola kontrolü (PostgreSQL crypt)
+  // 1. Supabase auth.users tablosunda kullanıcı adı veya e-posta ile parola kontrolü (PostgreSQL crypt)
   const users: any = await prisma.$queryRawUnsafe(
     `SELECT id, email FROM auth.users 
-     WHERE email = $1 AND encrypted_password = crypt($2, encrypted_password)
+     WHERE (
+       LOWER(email) = $1 
+       OR LOWER(email) = $1 || '@kafile.com' 
+       OR LOWER(email) = $1 || '@menziltakip.com'
+       OR split_part(LOWER(email), '@', 1) = $1
+       OR raw_user_meta_data->>'username' = $1
+     )
+     AND encrypted_password = crypt($2, encrypted_password)
      LIMIT 1;`,
-    email,
+    identifier,
     password
   )
 
   if (!users || users.length === 0) {
     throw createError({
       statusCode: 401,
-      statusMessage: 'E-posta adresi veya parola hatalı.',
+      statusMessage: 'Kullanıcı adı veya şifre hatalı.',
     })
   }
 

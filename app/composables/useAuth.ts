@@ -59,13 +59,13 @@ export const useAuth = () => {
     return null
   }
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     isLoading.value = true
     try {
       // 1. Sunucu auth uç noktasından doğrula
       const response = await $fetch<{ success: boolean; token: string; user: AppUserProfile }>('/api/auth/login', {
         method: 'POST',
-        body: { email, password },
+        body: { username: identifier, email: identifier, password },
       })
 
       if (response && response.token) {
@@ -75,7 +75,7 @@ export const useAuth = () => {
       }
       throw new Error('Giriş oturumu oluşturulamadı.')
     } catch (err: any) {
-      throw new Error(err.data?.statusMessage || err.message || 'E-posta adresi veya parola hatalı.')
+      throw new Error(err.data?.statusMessage || err.message || 'Kullanıcı adı veya şifre hatalı.')
     } finally {
       isLoading.value = false
     }

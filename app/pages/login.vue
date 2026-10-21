@@ -12,21 +12,21 @@ if (isAuthenticated.value) {
   navigateTo('/')
 }
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const errorMessage = ref('')
 const isSubmitting = ref(false)
 
 const handleLogin = async () => {
   errorMessage.value = ''
-  if (!email.value || !password.value) {
-    errorMessage.value = 'Lütfen e-posta adresinizi ve parolanızı girin.'
+  if (!username.value || !password.value) {
+    errorMessage.value = 'Lütfen kullanıcı adınızı ve şifrenizi girin.'
     return
   }
 
   isSubmitting.value = true
   try {
-    await login(email.value, password.value)
+    await login(username.value, password.value)
     await navigateTo('/')
   } catch (err: any) {
     errorMessage.value = err.message || 'Giriş yapılamadı. Bilgilerinizi kontrol edip tekrar deneyin.'
@@ -60,21 +60,21 @@ const handleLogin = async () => {
       <!-- Giriş Formu -->
       <form class="space-y-4" @submit.prevent="handleLogin">
         <div>
-          <label for="email" class="block text-sm font-medium text-slate-700 mb-1">E-posta Adresi</label>
+          <label for="username" class="block text-sm font-medium text-slate-700 mb-1">Kullanıcı Adı</label>
           <input
-            id="email"
-            v-model="email"
-            type="email"
+            id="username"
+            v-model="username"
+            type="text"
             required
-            autocomplete="email"
+            autocomplete="username"
             class="input-field"
-            placeholder="ornek@kafile.com"
+            placeholder="kafile12"
             :disabled="isSubmitting"
           />
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Parola</label>
+          <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
           <input
             id="password"
             v-model="password"
