@@ -123,6 +123,33 @@ const saveConvoy = async () => {
   }
 }
 
+// Kafile Silme
+const isDeleteConvoyOpen = ref(false)
+const convoyToDelete = ref<any>(null)
+const isDeletingConvoy = ref(false)
+
+const promptDeleteConvoy = (c: any) => {
+  convoyToDelete.value = c
+  isDeleteConvoyOpen.value = true
+}
+
+const executeDeleteConvoy = async () => {
+  if (!convoyToDelete.value) return
+  isDeletingConvoy.value = true
+  try {
+    await apiFetch(`/api/convoys/${convoyToDelete.value.id}`, {
+      method: 'DELETE',
+    })
+    isDeleteConvoyOpen.value = false
+    convoyToDelete.value = null
+    await fetchConvoys()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Kafile silinirken bir hata oluştu.')
+  } finally {
+    isDeletingConvoy.value = false
+  }
+}
+
 onMounted(() => {
   fetchConvoys()
 })
@@ -251,6 +278,13 @@ onMounted(() => {
                   >
                     Düzenle
                   </button>
+                  <button
+                    type="button"
+                    class="text-xs font-semibold text-rose-600 hover:text-rose-800"
+                    @click="promptDeleteConvoy(c)"
+                  >
+                    Sil
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -294,6 +328,13 @@ onMounted(() => {
             <div class="flex items-center justify-end space-x-3 pt-1 text-xs">
               <NuxtLink :to="`/convoys/${c.id}`" class="font-semibold text-emerald-700">Detay</NuxtLink>
               <button type="button" class="font-semibold text-slate-600" @click="openEditModal(c)">Düzenle</button>
+              <button
+                type="button"
+                class="font-semibold text-rose-600 hover:text-rose-800"
+                @click="promptDeleteConvoy(c)"
+              >
+                Sil
+              </button>
             </div>
           </div>
         </div>
@@ -368,5 +409,18 @@ onMounted(() => {
         </form>
       </div>
     </div>
+
+    <!-- Kafile Silme Onay Modalı -->
+    <ConfirmModal
+      :is-open="isDeleteConvoyOpen"
+      title="Kafileyi Sil"
+      :message="`'${convoyToDelete?.name}' adlı kafileyi silmek istediğinizden emin misiniz? (Not: Bağlı seferleri olan kafileler silinemez, pasife alınabilir).`"
+      confirm-text="Evet, Kafileyi Sil"
+      cancel-text="Vazgeç"
+      :is-danger="true"
+      :is-loading="isDeletingConvoy"
+      @confirm="executeDeleteConvoy"
+      @cancel="isDeleteConvoyOpen = false"
+    />
   </div>
 </template>

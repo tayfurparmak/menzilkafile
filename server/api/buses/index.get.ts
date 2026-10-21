@@ -57,6 +57,8 @@ export default defineEventHandler(async (event) => {
       ownerName: b.owner.name,
       ownerPhone: b.owner.phone,
       isOwnerActive: b.owner.isActive,
+      driverName: b.driverName,
+      driverPhone: b.driverPhone,
       notes: b.notes,
       isActive: b.isActive,
       createdAt: b.createdAt,

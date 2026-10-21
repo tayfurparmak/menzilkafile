@@ -15,6 +15,8 @@ const updateTripSchema = z.object({
   status: z.nativeEnum(TripStatus).optional(),
   agreedAmount: z.union([z.string(), z.number()]).optional(),
   notes: z.string().trim().optional().nullable(),
+  driverName: z.string().trim().optional().nullable(),
+  driverPhone: z.string().trim().optional().nullable(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -171,6 +173,8 @@ export default defineEventHandler(async (event) => {
         ...(body.status !== undefined ? { status: body.status } : {}),
         ...(body.agreedAmount !== undefined ? { agreedAmount: newAgreedAmountDecimal.toFixed(2) } : {}),
         ...(body.notes !== undefined ? { notes: body.notes } : {}),
+        ...(body.driverName !== undefined ? { driverName: body.driverName } : {}),
+        ...(body.driverPhone !== undefined ? { driverPhone: body.driverPhone } : {}),
       },
       include: {
         bus: true,

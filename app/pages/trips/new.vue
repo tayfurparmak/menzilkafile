@@ -18,11 +18,21 @@ const arrivalLocation = ref('Konya')
 const startsAt = ref('')
 const endsAt = ref('')
 const agreedAmount = ref('18000')
+const driverName = ref('')
+const driverPhone = ref('')
 const notes = ref('')
 
 // Seçili Otobüs ve Snapshot Önizlemesi
 const selectedBus = computed(() => {
   return buses.value.find((b) => b.id === selectedBusId.value) || null
+})
+
+// Otobüs değiştiğinde şoför bilgilerini otomatik doldur
+watch(selectedBus, (bus) => {
+  if (bus && (!driverName.value || driverName.value === '')) {
+    if (bus.driverName) driverName.value = bus.driverName
+    if (bus.driverPhone) driverPhone.value = bus.driverPhone
+  }
 })
 
 // Varsayılan saatleri ayarla (Yarın 08:00 - 18:00)
@@ -105,6 +115,8 @@ const createTrip = async () => {
         convoyId: selectedConvoyId.value || null,
         departureLocation: departureLocation.value.trim(),
         arrivalLocation: arrivalLocation.value.trim(),
+        driverName: driverName.value.trim() || null,
+        driverPhone: driverPhone.value.trim() || null,
         startsAt: startDateObj.toISOString(),
         endsAt: endDateObj.toISOString(),
         agreedAmount: agreedAmount.value.toString(),
@@ -252,9 +264,36 @@ onMounted(() => {
         </p>
       </div>
 
-      <!-- 3. Mali Anlaşma ve Notlar -->
+      <!-- 3. Şoför ve İletişim Bilgileri -->
+      <div class="space-y-4 pb-6 border-b border-slate-100">
+        <h2 class="text-base font-bold text-slate-900">3. Şoför ve İletişim Bilgileri</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Otobüs Şoförü (Ad Soyad)</label>
+            <input
+              v-model="driverName"
+              type="text"
+              class="input-field"
+              placeholder="Ör. Ahmet Yılmaz"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Şoför Telefon Numarası</label>
+            <input
+              v-model="driverPhone"
+              type="tel"
+              class="input-field"
+              placeholder="Ör. 0532 123 45 67"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Mali Anlaşma ve Notlar -->
       <div class="space-y-4">
-        <h2 class="text-base font-bold text-slate-900">3. Mali Anlaşma ve Notlar</h2>
+        <h2 class="text-base font-bold text-slate-900">4. Mali Anlaşma ve Notlar</h2>
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">

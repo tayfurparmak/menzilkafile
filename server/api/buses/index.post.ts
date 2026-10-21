@@ -10,6 +10,8 @@ const createBusSchema = z.object({
   }),
   ownerId: z.string().min(1, 'Araç sahibi seçilmelidir.'),
   notes: z.string().trim().optional().nullable(),
+  driverName: z.string().trim().optional().nullable(),
+  driverPhone: z.string().trim().optional().nullable(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -49,6 +51,8 @@ export default defineEventHandler(async (event) => {
       plate: normalizedPlate,
       capacity: body.capacity,
       ownerId: body.ownerId,
+      driverName: body.driverName || null,
+      driverPhone: body.driverPhone || null,
       notes: body.notes || null,
       isActive: true,
     },

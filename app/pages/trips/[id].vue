@@ -245,6 +245,64 @@ const updateTripFee = async () => {
   }
 }
 
+// Şoför Bilgisi Güncelleme
+const isDriverModalOpen = ref(false)
+const driverNameInput = ref('')
+const driverPhoneInput = ref('')
+const isDriverSubmitting = ref(false)
+const driverError = ref('')
+
+const openDriverModal = () => {
+  driverNameInput.value = trip.value.driverName || ''
+  driverPhoneInput.value = trip.value.driverPhone || ''
+  driverError.value = ''
+  isDriverModalOpen.value = true
+}
+
+const updateDriverInfo = async () => {
+  isDriverSubmitting.value = true
+  driverError.value = ''
+  try {
+    await apiFetch(`/api/trips/${trip.value.id}`, {
+      method: 'PUT',
+      body: {
+        driverName: driverNameInput.value.trim() || null,
+        driverPhone: driverPhoneInput.value.trim() || null,
+      },
+    })
+    isDriverModalOpen.value = false
+    successMessage.value = 'Şoför bilgileri başarıyla güncellendi.'
+    await fetchTripDetail()
+  } catch (err: any) {
+    driverError.value = err.data?.statusMessage || 'Şoför bilgileri güncellenemedi.'
+  } finally {
+    isDriverSubmitting.value = false
+  }
+}
+
+// Seferi Kalıcı Olarak Silme
+const isDeleteTripOpen = ref(false)
+const isDeletingTrip = ref(false)
+
+const promptDeleteTrip = () => {
+  isDeleteTripOpen.value = true
+}
+
+const executeDeleteTrip = async () => {
+  isDeletingTrip.value = true
+  try {
+    await apiFetch(`/api/trips/${trip.value.id}`, {
+      method: 'DELETE',
+    })
+    await navigateTo('/trips')
+  } catch (err: any) {
+    errorMessage.value = err.data?.statusMessage || 'Sefer silinirken bir hata oluştu.'
+    isDeleteTripOpen.value = false
+  } finally {
+    isDeletingTrip.value = false
+  }
+}
+
 onMounted(() => {
   fetchTripDetail()
 })
@@ -307,6 +365,15 @@ onMounted(() => {
             ✕ İptal Edildi (Son Durum)
           </span>
         </template>
+
+        <!-- Seferi Sil Butonu -->
+        <button
+          type="button"
+          class="btn-secondary text-xs py-1.5 px-3 text-rose-600 hover:bg-rose-50 border-rose-200"
+          @click="promptDeleteTrip"
+        >
+          🗑️ Seferi Sil
+        </button>
       </div>
     </div>
 
@@ -351,15 +418,34 @@ onMounted(() => {
           </p>
         </div>
 
-        <!-- Araç ve Tarihsel Sahip Snapshot Kartı -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1.5 shrink-0 min-w-[240px]">
-          <p class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Tarihsel Araç Bilgisi</p>
+        <!-- Araç ve Şoför Bilgisi Kartı -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2 shrink-0 min-w-[260px]">
+          <div class="flex items-center justify-between">
+            <p class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Araç ve Şoför Bilgisi</p>
+            <button
+              type="button"
+              class="text-xs font-semibold text-emerald-700 hover:underline"
+              @click="openDriverModal"
+            >
+              Şoförü Düzenle
+            </button>
+          </div>
           <p>Plaka: <strong class="text-slate-900 text-sm">{{ trip.plateSnapshot }}</strong> ({{ trip.capacitySnapshot }} Kişilik)</p>
           <p>
             Araç Sahibi:
             <NuxtLink :to="`/owners/${trip.ownerId}`" class="font-bold text-emerald-700 hover:underline">
               {{ trip.ownerNameSnapshot }}
             </NuxtLink>
+          </p>
+          <p>
+            Otobüs Şoförü: <strong class="text-slate-900">{{ trip.driverName || 'Belirtilmedi' }}</strong>
+          </p>
+          <p>
+            Şoför Tel:
+            <a v-if="trip.driverPhone" :href="`tel:${trip.driverPhone}`" class="font-semibold text-emerald-700 hover:underline">
+              📞 {{ trip.driverPhone }}
+            </a>
+            <span v-else class="text-slate-400">Belirtilmedi</span>
           </p>
           <p class="text-[10px] text-slate-400 italic">
             * Sefer oluşturulurken kaydedilmiş dondurulmuş veridir.
@@ -633,6 +719,66 @@ onMounted(() => {
       :is-loading="isUpdatingStatus"
       @confirm="executeStatusChange"
       @cancel="isStatusModalOpen = false"
+    />
+
+    <!-- Şoför Bilgisi Düzenleme Modalı -->
+    <div
+      v-if="isDriverModalOpen"
+      class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+      @click.self="isDriverModalOpen = false"
+    >
+      <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+        <h3 class="text-lg font-bold text-slate-900">Şoför Bilgilerini Düzenle</h3>
+
+        <div v-if="driverError" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+          {{ driverError }}
+        </div>
+
+        <form @submit.prevent="updateDriverInfo" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Otobüs Şoförü (Ad Soyad)</label>
+            <input
+              v-model="driverNameInput"
+              type="text"
+              class="input-field"
+              placeholder="Ör. Ahmet Yılmaz"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Şoför Telefon Numarası</label>
+            <input
+              v-model="driverPhoneInput"
+              type="tel"
+              class="input-field"
+              placeholder="Ör. 0532 123 45 67"
+            />
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+            <button type="button" class="btn-secondary" :disabled="isDriverSubmitting" @click="isDriverModalOpen = false">
+              Vazgeç
+            </button>
+            <button type="submit" class="btn-primary" :disabled="isDriverSubmitting">
+              <span v-if="isDriverSubmitting" class="mr-2 animate-spin">⏳</span>
+              Kaydet
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Seferi Silme Onay Modalı -->
+    <ConfirmModal
+      :is-open="isDeleteTripOpen"
+      title="Seferi Kalıcı Olarak Sil"
+      :message="`'${trip?.plateSnapshot}' plakalı seferi ve varsa bu sefere bağlı tüm ödeme kayıtlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`"
+      confirm-text="Evet, Seferi Sil"
+      cancel-text="Vazgeç"
+      :is-danger="true"
+      :is-loading="isDeletingTrip"
+      @confirm="executeDeleteTrip"
+      @cancel="isDeleteTripOpen = false"
     />
   </div>
 </template>

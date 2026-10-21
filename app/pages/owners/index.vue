@@ -183,6 +183,34 @@ const executeToggleActive = async () => {
   }
 }
 
+// Araç Sahibi Silme
+const isDeleteOwnerOpen = ref(false)
+const ownerToDelete = ref<any>(null)
+const isDeletingOwner = ref(false)
+
+const promptDeleteOwner = (owner: any) => {
+  ownerToDelete.value = owner
+  isDeleteOwnerOpen.value = true
+}
+
+const executeDeleteOwner = async () => {
+  if (!ownerToDelete.value) return
+  isDeletingOwner.value = true
+  try {
+    await apiFetch(`/api/owners/${ownerToDelete.value.id}`, {
+      method: 'DELETE',
+    })
+    isDeleteOwnerOpen.value = false
+    ownerToDelete.value = null
+    successMessage.value = 'Araç sahibi başarıyla silindi.'
+    await fetchOwners()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Araç sahibi silinirken bir hata oluştu.')
+  } finally {
+    isDeletingOwner.value = false
+  }
+}
+
 onMounted(() => {
   fetchOwners()
 })
@@ -322,6 +350,13 @@ onMounted(() => {
                 >
                   {{ owner.isActive ? 'Pasife Al' : 'Aktifleştir' }}
                 </button>
+                <button
+                  type="button"
+                  class="text-xs font-semibold text-rose-600 hover:text-rose-800"
+                  @click="promptDeleteOwner(owner)"
+                >
+                  Sil
+                </button>
               </td>
             </tr>
           </tbody>
@@ -370,6 +405,13 @@ onMounted(() => {
               @click="promptToggleActive(owner)"
             >
               {{ owner.isActive ? 'Pasife Al' : 'Aktifleştir' }}
+            </button>
+            <button
+              type="button"
+              class="font-semibold text-rose-600 hover:text-rose-800"
+              @click="promptDeleteOwner(owner)"
+            >
+              Sil
             </button>
           </div>
         </div>
@@ -467,6 +509,19 @@ onMounted(() => {
       :is-loading="isDeleting"
       @confirm="executeToggleActive"
       @cancel="isConfirmOpen = false"
+    />
+
+    <!-- Araç Sahibi Silme Onay Modalı -->
+    <ConfirmModal
+      :is-open="isDeleteOwnerOpen"
+      title="Araç Sahibini Sil"
+      :message="`'${ownerToDelete?.name}' adlı araç sahibini silmek istediğinizden emin misiniz? (Not: İlişkili otobüs veya seferi olan araç sahipleri silinemez, pasife alınabilir).`"
+      confirm-text="Evet, Araç Sahibini Sil"
+      cancel-text="Vazgeç"
+      :is-danger="true"
+      :is-loading="isDeletingOwner"
+      @confirm="executeDeleteOwner"
+      @cancel="isDeleteOwnerOpen = false"
     />
   </div>
 </template>

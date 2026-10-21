@@ -211,6 +211,34 @@ const executeToggleActive = async () => {
   }
 }
 
+// Otobüs Silme
+const isDeleteBusOpen = ref(false)
+const busToDelete = ref<any>(null)
+const isDeletingBus = ref(false)
+
+const promptDeleteBus = (bus: any) => {
+  busToDelete.value = bus
+  isDeleteBusOpen.value = true
+}
+
+const executeDeleteBus = async () => {
+  if (!busToDelete.value) return
+  isDeletingBus.value = true
+  try {
+    await apiFetch(`/api/buses/${busToDelete.value.id}`, {
+      method: 'DELETE',
+    })
+    isDeleteBusOpen.value = false
+    busToDelete.value = null
+    successMessage.value = 'Otobüs başarıyla silindi.'
+    await fetchBuses()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Otobüs silinirken bir hata oluştu.')
+  } finally {
+    isDeletingBus.value = false
+  }
+}
+
 onMounted(() => {
   fetchOwnersList()
   fetchBuses()
@@ -370,6 +398,13 @@ onMounted(() => {
                 >
                   {{ bus.isActive ? 'Pasife Al' : 'Aktifleştir' }}
                 </button>
+                <button
+                  type="button"
+                  class="text-xs font-semibold text-rose-600 hover:text-rose-800"
+                  @click="promptDeleteBus(bus)"
+                >
+                  Sil
+                </button>
               </td>
             </tr>
           </tbody>
@@ -409,6 +444,13 @@ onMounted(() => {
                 @click="promptToggleActive(bus)"
               >
                 {{ bus.isActive ? 'Pasif' : 'Aktif' }}
+              </button>
+              <button
+                type="button"
+                class="font-semibold text-rose-600 hover:text-rose-800"
+                @click="promptDeleteBus(bus)"
+              >
+                Sil
               </button>
             </div>
           </div>
@@ -518,6 +560,19 @@ onMounted(() => {
       :is-loading="isActionLoading"
       @confirm="executeToggleActive"
       @cancel="isConfirmOpen = false"
+    />
+
+    <!-- Otobüs Silme Onay Modalı -->
+    <ConfirmModal
+      :is-open="isDeleteBusOpen"
+      title="Otobüsü Sil"
+      :message="`'${busToDelete?.plate}' plakalı otobüsü silmek istediğinizden emin misiniz? (Not: İlişkili seferleri olan araçlar silinemez, pasife alınabilir).`"
+      confirm-text="Evet, Otobüsü Sil"
+      cancel-text="Vazgeç"
+      :is-danger="true"
+      :is-loading="isDeletingBus"
+      @confirm="executeDeleteBus"
+      @cancel="isDeleteBusOpen = false"
     />
   </div>
 </template>

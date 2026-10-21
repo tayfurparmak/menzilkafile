@@ -50,6 +50,8 @@ model Bus {
   plate     String   @unique
   capacity  Int
   ownerId   String
+  driverName String?
+  driverPhone String?
   notes     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -83,6 +85,8 @@ model Trip {
   plateSnapshot     String
   capacitySnapshot  Int
   ownerNameSnapshot String
+  driverName        String?
+  driverPhone       String?
   departureLocation String
   arrivalLocation   String
   startsAt          DateTime

@@ -10,6 +10,8 @@ const updateBusSchema = z.object({
   }).optional(),
   ownerId: z.string().min(1).optional(),
   notes: z.string().trim().optional().nullable(),
+  driverName: z.string().trim().optional().nullable(),
+  driverPhone: z.string().trim().optional().nullable(),
   isActive: z.boolean().optional(),
 })
 
@@ -65,6 +67,8 @@ export default defineEventHandler(async (event) => {
       plate: normalizedPlate,
       ...(body.capacity !== undefined ? { capacity: body.capacity } : {}),
       ...(body.ownerId !== undefined ? { ownerId: body.ownerId } : {}),
+      ...(body.driverName !== undefined ? { driverName: body.driverName } : {}),
+      ...(body.driverPhone !== undefined ? { driverPhone: body.driverPhone } : {}),
       ...(body.notes !== undefined ? { notes: body.notes } : {}),
       ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
     },

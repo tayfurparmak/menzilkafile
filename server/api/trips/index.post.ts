@@ -24,6 +24,8 @@ const createTripSchema = z
       { message: 'Anlaşılan sefer ücreti 0 veya daha büyük bir sayı olmalıdır.' }
     ),
     notes: z.string().trim().optional().nullable(),
+    driverName: z.string().trim().optional().nullable(),
+    driverPhone: z.string().trim().optional().nullable(),
   })
   .refine((data) => new Date(data.endsAt) > new Date(data.startsAt), {
     message: 'Sefer bitiş tarihi, başlangıç tarihinden sonra olmalıdır.',
@@ -97,6 +99,8 @@ export default defineEventHandler(async (event) => {
         plateSnapshot: bus.plate, // Snapshot
         capacitySnapshot: bus.capacity, // Snapshot
         ownerNameSnapshot: bus.owner.name, // Snapshot
+        driverName: body.driverName || bus.driverName || null,
+        driverPhone: body.driverPhone || bus.driverPhone || null,
         departureLocation: body.departureLocation,
         arrivalLocation: body.arrivalLocation,
         startsAt: startsAtDate,

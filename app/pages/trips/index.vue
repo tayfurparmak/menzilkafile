@@ -35,6 +35,33 @@ const isUpdatingStatus = ref(false)
 // İptal İşlemi Doğrulama Modalı
 const isCancelConfirmOpen = ref(false)
 
+// Sefer Silme Modalı State
+const isDeleteTripOpen = ref(false)
+const tripToDelete = ref<any>(null)
+const isDeletingTrip = ref(false)
+
+const promptDeleteTrip = (trip: any) => {
+  tripToDelete.value = trip
+  isDeleteTripOpen.value = true
+}
+
+const executeDeleteTrip = async () => {
+  if (!tripToDelete.value) return
+  isDeletingTrip.value = true
+  try {
+    await apiFetch(`/api/trips/${tripToDelete.value.id}`, {
+      method: 'DELETE',
+    })
+    isDeleteTripOpen.value = false
+    tripToDelete.value = null
+    await fetchTrips()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Sefer silinirken bir hata oluştu.')
+  } finally {
+    isDeletingTrip.value = false
+  }
+}
+
 const syncUrl = () => {
   const query: Record<string, string> = {}
   if (startDate.value) query.startDate = startDate.value
@@ -425,7 +452,7 @@ onMounted(() => {
               <th class="py-3.5 px-4">Anlaşılan Ücret</th>
               <th class="py-3.5 px-4">Ödenen</th>
               <th class="py-3.5 px-4">Kalan Borç</th>
-              <th class="py-3.5 px-4">Sefer Durumu</th>
+              <th class="py-3.5 px-4">Otobüs Şoförü / Tel</th>
               <th class="py-3.5 px-4">Ödeme Durumu</th>
               <th class="py-3.5 px-4 text-right">İşlemler</th>
             </tr>
@@ -433,9 +460,12 @@ onMounted(() => {
           <tbody class="divide-y divide-slate-100">
             <tr v-for="trip in trips" :key="trip.id" class="hover:bg-slate-50/80 transition-colors">
               <td class="py-3.5 px-4">
-                <NuxtLink :to="`/trips/${trip.id}`" class="font-bold text-slate-900 hover:text-emerald-700 hover:underline">
-                  {{ trip.plate }}
-                </NuxtLink>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <NuxtLink :to="`/trips/${trip.id}`" class="font-bold text-slate-900 hover:text-emerald-700 hover:underline">
+                    {{ trip.plate }}
+                  </NuxtLink>
+                  <StatusBadge :status="trip.status" class="scale-90 origin-left" />
+                </div>
                 <span class="text-xs text-slate-400 block">({{ trip.capacity }} Kişilik)</span>
                 <span class="text-xs text-slate-500 block truncate max-w-[130px]">{{ trip.ownerName }}</span>
               </td>
@@ -460,7 +490,15 @@ onMounted(() => {
                 {{ formatMoney(trip.remainingAmount) }}
               </td>
               <td class="py-3.5 px-4 whitespace-nowrap">
-                <StatusBadge :status="trip.status" />
+                <span class="font-medium text-slate-900 block">{{ trip.driverName || 'Belirtilmedi' }}</span>
+                <a
+                  v-if="trip.driverPhone"
+                  :href="`tel:${trip.driverPhone}`"
+                  class="text-xs text-emerald-700 hover:underline inline-flex items-center gap-1 mt-0.5"
+                >
+                  <span>📞</span> {{ trip.driverPhone }}
+                </a>
+                <span v-else class="text-xs text-slate-400 block">-</span>
               </td>
               <td class="py-3.5 px-4 whitespace-nowrap">
                 <PaymentStatusBadge :status="trip.paymentStatus" />
@@ -476,6 +514,13 @@ onMounted(() => {
                   @click="openStatusModal(trip)"
                 >
                   Durum Değiştir
+                </button>
+                <button
+                  type="button"
+                  class="text-xs font-semibold text-rose-600 hover:text-rose-800"
+                  @click="promptDeleteTrip(trip)"
+                >
+                  Sil
                 </button>
               </td>
             </tr>
@@ -496,9 +541,18 @@ onMounted(() => {
             <StatusBadge :status="trip.status" />
           </div>
 
+          <div class="text-xs text-slate-600 bg-slate-50 p-2 rounded flex items-center justify-between">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Otobüs Şoförü</span>
+              <span class="font-medium text-slate-900">{{ trip.driverName || 'Belirtilmedi' }}</span>
+              <span v-if="trip.driverPhone" class="text-emerald-700 ml-1.5 font-semibold">📞 {{ trip.driverPhone }}</span>
+            </div>
+            <PaymentStatusBadge :status="trip.paymentStatus" />
+          </div>
+
           <div class="text-xs text-slate-500 flex items-center justify-between">
             <span>Kalkış: {{ formatDateTime(trip.startsAt) }}</span>
-            <PaymentStatusBadge :status="trip.paymentStatus" />
+            <span v-if="trip.convoyName" class="bg-slate-100 px-2 py-0.5 rounded font-medium">{{ trip.convoyName }}</span>
           </div>
 
           <div class="grid grid-cols-3 gap-2 text-xs bg-slate-50 p-2.5 rounded-lg">
@@ -526,6 +580,13 @@ onMounted(() => {
                 @click="openStatusModal(trip)"
               >
                 Durum Değiştir
+              </button>
+              <button
+                type="button"
+                class="font-semibold text-rose-600 hover:text-rose-800"
+                @click="promptDeleteTrip(trip)"
+              >
+                Sil
               </button>
               <NuxtLink :to="`/trips/${trip.id}`" class="font-bold text-emerald-700">
                 Sefer Detayı &rarr;
@@ -621,6 +682,19 @@ onMounted(() => {
       :is-loading="isUpdatingStatus"
       @confirm="executeStatusUpdate"
       @cancel="isCancelConfirmOpen = false"
+    />
+
+    <!-- Sefer Silme Doğrulama Modalı -->
+    <ConfirmModal
+      :is-open="isDeleteTripOpen"
+      title="Seferi Kalıcı Olarak Sil"
+      :message="`'${tripToDelete?.plate}' plakalı seferi ve varsa bu sefere bağlı tüm ödeme kayıtlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`"
+      confirm-text="Evet, Seferi Sil"
+      cancel-text="Vazgeç"
+      :is-danger="true"
+      :is-loading="isDeletingTrip"
+      @confirm="executeDeleteTrip"
+      @cancel="isDeleteTripOpen = false"
     />
   </div>
 </template>
