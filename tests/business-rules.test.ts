@@ -29,16 +29,19 @@ describe('Kafile Yönetim Sistemi - İş Kuralları ve Doğrulama Testleri', () 
 
   // 2. Geçersiz Kapasite Engellenmesi
   describe('Koltuk Kapasitesi Doğrulaması', () => {
-    it('yalnızca 41, 46 ve 54 kapasitelerini kabul etmelidir', () => {
+    it('yalnızca 29, 41, 46, 50 ve 54 kapasitelerini kabul etmelidir', () => {
+      expect(isValidCapacity(29)).toBe(true)
       expect(isValidCapacity(41)).toBe(true)
       expect(isValidCapacity(46)).toBe(true)
+      expect(isValidCapacity(50)).toBe(true)
       expect(isValidCapacity(54)).toBe(true)
     })
 
-    it('41, 46 veya 54 dışındaki kapasiteleri reddetmelidir', () => {
+    it('29, 41, 46, 50 veya 54 dışındaki kapasiteleri reddetmelidir', () => {
+      expect(isValidCapacity(28)).toBe(false)
       expect(isValidCapacity(30)).toBe(false)
       expect(isValidCapacity(40)).toBe(false)
-      expect(isValidCapacity(50)).toBe(false)
+      expect(isValidCapacity(55)).toBe(false)
       expect(isValidCapacity(60)).toBe(false)
       expect(isValidCapacity(0)).toBe(false)
       expect(isValidCapacity(-46)).toBe(false)

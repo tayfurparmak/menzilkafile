@@ -8,7 +8,7 @@ async function applyConstraints() {
   const sqlStatements = [
     // Check constraints
     `ALTER TABLE "Bus" DROP CONSTRAINT IF EXISTS "check_bus_capacity";`,
-    `ALTER TABLE "Bus" ADD CONSTRAINT "check_bus_capacity" CHECK ("capacity" IN (41, 46, 54));`,
+    `ALTER TABLE "Bus" ADD CONSTRAINT "check_bus_capacity" CHECK ("capacity" IN (29, 41, 46, 50, 54));`,
 
     `ALTER TABLE "Trip" DROP CONSTRAINT IF EXISTS "check_trip_ends_after_starts";`,
     `ALTER TABLE "Trip" ADD CONSTRAINT "check_trip_ends_after_starts" CHECK ("endsAt" > "startsAt");`,
@@ -17,7 +17,7 @@ async function applyConstraints() {
     `ALTER TABLE "Trip" ADD CONSTRAINT "check_trip_agreed_amount" CHECK ("agreedAmount" >= 0);`,
 
     `ALTER TABLE "Trip" DROP CONSTRAINT IF EXISTS "check_trip_capacity_snapshot";`,
-    `ALTER TABLE "Trip" ADD CONSTRAINT "check_trip_capacity_snapshot" CHECK ("capacitySnapshot" IN (41, 46, 54));`,
+    `ALTER TABLE "Trip" ADD CONSTRAINT "check_trip_capacity_snapshot" CHECK ("capacitySnapshot" IN (29, 41, 46, 50, 54));`,
 
     `ALTER TABLE "Payment" DROP CONSTRAINT IF EXISTS "check_payment_amount_positive";`,
     `ALTER TABLE "Payment" ADD CONSTRAINT "check_payment_amount_positive" CHECK ("amount" > 0);`,

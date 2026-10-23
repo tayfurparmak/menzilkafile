@@ -294,11 +294,13 @@ onMounted(() => {
           </option>
         </select>
 
-        <!-- Kapasite Filtresi (41, 46, 54) -->
+        <!-- Kapasite Filtresi (29, 41, 46, 50, 54) -->
         <select v-model="selectedCapacity" class="input-field text-xs py-1.5 w-auto">
           <option value="">Tüm Kapasiteler</option>
+          <option value="29">29 Kişilik</option>
           <option value="41">41 Kişilik</option>
           <option value="46">46 Kişilik</option>
+          <option value="50">50 Kişilik</option>
           <option value="54">54 Kişilik</option>
         </select>
 
@@ -520,11 +522,13 @@ onMounted(() => {
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Koltuk Kapasitesi *</label>
             <select v-model="formCapacity" class="input-field">
+              <option :value="29">29 Kişilik</option>
               <option :value="41">41 Kişilik</option>
               <option :value="46">46 Kişilik</option>
+              <option :value="50">50 Kişilik</option>
               <option :value="54">54 Kişilik</option>
             </select>
-            <p class="text-[11px] text-slate-400 mt-1">Yalnızca 41, 46 veya 54 kapasiteli otobüslere izin verilir.</p>
+            <p class="text-[11px] text-slate-400 mt-1">Yalnızca 29, 41, 46, 50 veya 54 kapasiteli otobüslere izin verilir.</p>
           </div>
 
           <div>

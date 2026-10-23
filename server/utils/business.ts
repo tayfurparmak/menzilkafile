@@ -11,8 +11,8 @@ export function normalizePlate(plate: string): string {
     .toLocaleUpperCase('tr-TR')
 }
 
-// 2. Geçerli Kapasite Kontrolü (41, 46, 54)
-export const VALID_CAPACITIES = [41, 46, 54] as const
+// 2. Geçerli Kapasite Kontrolü (29, 41, 46, 50, 54)
+export const VALID_CAPACITIES = [29, 41, 46, 50, 54] as const
 export type ValidCapacity = (typeof VALID_CAPACITIES)[number]
 
 export function isValidCapacity(capacity: number): capacity is ValidCapacity {

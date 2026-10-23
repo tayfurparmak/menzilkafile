@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
 import { requireAuthUser } from '../../utils/auth'
+import { isValidCapacity } from '../../utils/business'
 
 const querySchema = z.object({
   search: z.string().optional(),
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
   if (status === 'active') where.isActive = true
   if (status === 'inactive') where.isActive = false
   if (ownerId) where.ownerId = ownerId
-  if (capacity && [41, 46, 54].includes(capacity)) where.capacity = capacity
+  if (capacity && isValidCapacity(capacity)) where.capacity = capacity
 
   if (search && search.trim() !== '') {
     const s = search.trim().toLocaleUpperCase('tr-TR')

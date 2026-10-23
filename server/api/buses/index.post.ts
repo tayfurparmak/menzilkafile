@@ -7,7 +7,7 @@ const createBusSchema = z.object({
   plate: z.string().trim().min(3, 'Plaka en az 3 karakter olmalıdır.'),
   model: z.string().trim().optional().nullable(),
   capacity: z.coerce.number().refine(isValidCapacity, {
-    message: 'Kapasite yalnızca 41, 46 veya 54 olabilir.',
+    message: 'Kapasite yalnızca 29, 41, 46, 50 veya 54 olabilir.',
   }),
   ownerId: z.string().min(1, 'Araç sahibi seçilmelidir.'),
   notes: z.string().trim().optional().nullable(),

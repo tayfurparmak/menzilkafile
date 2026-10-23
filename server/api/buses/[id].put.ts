@@ -7,7 +7,7 @@ const updateBusSchema = z.object({
   plate: z.string().trim().min(3).optional(),
   model: z.string().trim().optional().nullable(),
   capacity: z.coerce.number().refine(isValidCapacity, {
-    message: 'Kapasite yalnızca 41, 46 veya 54 olabilir.',
+    message: 'Kapasite yalnızca 29, 41, 46, 50 veya 54 olabilir.',
   }).optional(),
   ownerId: z.string().min(1).optional(),
   notes: z.string().trim().optional().nullable(),
